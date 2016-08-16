@@ -11,7 +11,7 @@ Install this playbook:
 
 ### `couchdb_version`
 
-Default: `2.3`
+Default: `1.6.1`
 
 Set which CouchDB version to use.
 

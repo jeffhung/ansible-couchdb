@@ -1,0 +1,5 @@
+---
+- name: restart couchdb
+  service: state=restarted name=couchdb
+  become: yes
+

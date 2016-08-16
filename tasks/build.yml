@@ -1,0 +1,114 @@
+---
+
+- block:
+
+  # TODO: Download these RPM automatically.
+  - name: Prepare prerequisites in localrepo (yum)
+    copy:
+      dest: "{{ localrepo_path }}/{{ item }}"
+      src:  "{{ item }}"
+    with_items:
+      # autoconf-archive
+      - autoconf-archive-2015.02.24-1.sdl6.noarch.rpm
+      # js-devel
+      - js-devel-1.70-12.el6.x86_64.rpm
+      - js-1.70-12.el6.x86_64.rpm
+      # erlang-erts (common)
+      - erlang-erts-R14B-04.3.el6.x86_64.rpm
+      - erlang-kernel-R14B-04.3.el6.x86_64.rpm
+      - erlang-stdlib-R14B-04.3.el6.x86_64.rpm
+      - erlang-compiler-R14B-04.3.el6.x86_64.rpm
+      - erlang-crypto-R14B-04.3.el6.x86_64.rpm
+      - erlang-hipe-R14B-04.3.el6.x86_64.rpm
+      - erlang-syntax_tools-R14B-04.3.el6.x86_64.rpm
+      # erlang-asn1
+      - erlang-asn1-R14B-04.3.el6.x86_64.rpm
+      # erlang-eunit
+      - erlang-eunit-R14B-04.3.el6.x86_64.rpm
+      # erlang-os_mon
+      - erlang-os_mon-R14B-04.3.el6.x86_64.rpm
+      - erlang-mnesia-R14B-04.3.el6.x86_64.rpm
+      - erlang-snmp-R14B-04.3.el6.x86_64.rpm
+      - erlang-runtime_tools-R14B-04.3.el6.x86_64.rpm
+      - erlang-otp_mibs-R14B-04.3.el6.x86_64.rpm
+      - erlang-sasl-R14B-04.3.el6.x86_64.rpm
+      - erlang-tools-R14B-04.3.el6.x86_64.rpm
+      - erlang-webtool-R14B-04.3.el6.x86_64.rpm
+      - erlang-inets-R14B-04.3.el6.x86_64.rpm
+      - erlang-ssl-R14B-04.3.el6.x86_64.rpm
+      - erlang-public_key-R14B-04.3.el6.x86_64.rpm
+      - erlang-observer-R14B-04.3.el6.x86_64.rpm
+      - erlang-gs-R14B-04.3.el6.x86_64.rpm
+      - erlang-et-R14B-04.3.el6.x86_64.rpm
+      - erlang-wx-R14B-04.3.el6.x86_64.rpm
+      # erlang-xmerl
+      - erlang-xmerl-R14B-04.3.el6.x86_64.rpm
+    when: ansible_pkg_mgr == 'yum'
+
+  - name: Force reindex localrepo (yum)
+    command: /bin/true
+    notify: reindex localrepo
+    when: ansible_pkg_mgr == 'yum'
+  - meta: flush_handlers
+    when: ansible_pkg_mgr == 'yum'
+
+  - name: Install prerequisites (yum)
+    yum: state=present name={{ item }}
+    with_items:
+      - autoconf
+      - automake
+      - curl-devel
+      - help2man
+      - libicu-devel
+      - libtool
+      - perl-Test-Harness
+      # Fetch below from localrepo instead, cause they are not available on
+      # CentOS official repo:
+      - autoconf-archive
+      - js-devel
+      - erlang-erts
+      - erlang-asn1
+      - erlang-eunit
+      - erlang-os_mon
+      - erlang-xmerl
+      # Missing prerequisites for building couchdb
+      - gcc-c++
+      - rpm-build
+    when: ansible_pkg_mgr == 'yum'
+
+  - name: Install prerequisites (apt)
+    apt: state=present name={{ item }}
+    with_items:
+      - build-essential
+      - erlang-base-hipe
+      - erlang-dev
+      - erlang-manpages
+      - erlang-eunit
+      - erlang-nox
+      - libicu-dev
+      - libmozjs-dev
+      - libcurl4-openssl-dev
+    when: ansible_pkg_mgr == 'apt'
+
+  become: yes
+
+# ----------------------------------------------------------------------------
+
+- name: Set couchdb_source_file
+  set_fact:
+    couchdb_source_file: "apache-couchdb-{{ couchdb_version }}.tar.gz"
+#- debug: var=couchdb_source_file
+
+- name: Load couchdb source tarbll MD5
+  set_fact:
+    couchdb_source_md5: "{{ item.split(' ')|first }}"
+  with_url: [ "{{ couchdb_url_base }}/source/{{ couchdb_version }}/{{ couchdb_source_file }}.md5" ]
+#- debug: var=couchdb_source_md5
+
+# TODO: avoid hard-code /vagrant
+- name: Download couchdb source tarball
+  get_url:
+    url: "{{ couchdb_url_base }}/source/{{ couchdb_version }}/{{ couchdb_source_file }}"
+    dest: /vagrant/{{ couchdb_source_file }}
+    checksum: md5:{{ couchdb_source_md5 }}
+

@@ -1,0 +1,87 @@
+---
+
+- block:
+
+  # TODO: Download these RPM automatically.
+  - name: Prepare prerequisite and couchdb packages in localrepo (yum)
+    copy:
+      dest: "{{ localrepo_path }}/{{ item }}"
+      src:  "{{ item }}"
+    with_items:
+      # couchdb: built in builder
+      - couchdb-1.6.1-0.el6.x86_64.rpm
+      # js
+      - js-1.70-12.el6.x86_64.rpm
+      # erlang-erts (common)
+      - erlang-erts-R14B-04.3.el6.x86_64.rpm
+      - erlang-kernel-R14B-04.3.el6.x86_64.rpm
+      - erlang-stdlib-R14B-04.3.el6.x86_64.rpm
+      - erlang-compiler-R14B-04.3.el6.x86_64.rpm
+      - erlang-crypto-R14B-04.3.el6.x86_64.rpm
+      - erlang-hipe-R14B-04.3.el6.x86_64.rpm
+      - erlang-syntax_tools-R14B-04.3.el6.x86_64.rpm
+      # erlang-asn1
+      - erlang-asn1-R14B-04.3.el6.x86_64.rpm
+      # erlang-os_mon
+      - erlang-os_mon-R14B-04.3.el6.x86_64.rpm
+      - erlang-mnesia-R14B-04.3.el6.x86_64.rpm
+      - erlang-snmp-R14B-04.3.el6.x86_64.rpm
+      - erlang-runtime_tools-R14B-04.3.el6.x86_64.rpm
+      - erlang-otp_mibs-R14B-04.3.el6.x86_64.rpm
+      - erlang-sasl-R14B-04.3.el6.x86_64.rpm
+      - erlang-tools-R14B-04.3.el6.x86_64.rpm
+      - erlang-webtool-R14B-04.3.el6.x86_64.rpm
+      - erlang-inets-R14B-04.3.el6.x86_64.rpm
+      - erlang-ssl-R14B-04.3.el6.x86_64.rpm
+      - erlang-public_key-R14B-04.3.el6.x86_64.rpm
+      - erlang-observer-R14B-04.3.el6.x86_64.rpm
+      - erlang-gs-R14B-04.3.el6.x86_64.rpm
+      - erlang-et-R14B-04.3.el6.x86_64.rpm
+      - erlang-wx-R14B-04.3.el6.x86_64.rpm
+      # erlang-xmerl
+      - erlang-xmerl-R14B-04.3.el6.x86_64.rpm
+    when: ansible_pkg_mgr == 'yum'
+
+  - name: Force reindex localrepo (yum)
+    command: /bin/true
+    notify: reindex localrepo
+    when: ansible_pkg_mgr == 'yum'
+  - meta: flush_handlers
+    when: ansible_pkg_mgr == 'yum'
+
+# - name: Install prerequisites (yum)
+#   yum: state=present name={{ item }}
+#   with_items:
+#     # Fetch below from localrepo instead, cause they are not available on
+#     # CentOS official repo:
+#     - js
+#     - erlang-erts
+#     - erlang-asn1
+#     - erlang-os_mon
+#     - erlang-xmerl
+#   when: ansible_pkg_mgr == 'yum'
+
+  - name: Install couchdb (yum)
+    yum:  state=present pkg=couchdb
+    when: ansible_pkg_mgr == 'yum'
+
+# - name: Install couchdb (apt)
+#   apt:  state=present pkg=couchdb
+#   when: ansible_pkg_mgr == 'apt'
+
+  become: yes
+
+- name: Configure couchdb
+  template:
+    src: local.ini.j2
+    dest: /etc/couchdb/local.ini
+    owner: couchdb
+    group: couchdb
+    mode: 0644
+  become: yes
+  notify: restart couchdb
+
+- name: Start couchdb when boot
+  service: state=started name=couchdb
+  become: yes
+

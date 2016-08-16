@@ -1,0 +1,9 @@
+---
+- name: Initiate couchdb install process
+  include: build.yml
+  when: couchdb_environment == 'build'
+
+- name: Initiate couchdb install process
+  include: install.yml
+  when: couchdb_environment != 'build'
+

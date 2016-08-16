@@ -1,0 +1,8 @@
+---
+couchdb_version: 1.6.1
+
+# Which environment to deploy:
+# - test
+# - build
+couchdb_environment: test
+
